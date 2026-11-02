@@ -4,11 +4,15 @@ import './App.css'
 const API = 'http://localhost:8080/api'
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || '')
+  const [page, setPage] = useState(token ? 'main' : 'login')
+  const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' })
+  const [isSignup, setIsSignup] = useState(false)
+
   const [events, setEvents] = useState([])
   const [keyword, setKeyword] = useState('')
   const [alert, setAlert] = useState(null)
   const [modal, setModal] = useState(null)
-  const [userId, setUserId] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newEvent, setNewEvent] = useState({ name: '', description: '', totalQuantity: '' })
   const [chatOpen, setChatOpen] = useState(false)
@@ -17,8 +21,64 @@ function App() {
   const [chatLoading, setChatLoading] = useState(false)
 
   useEffect(() => {
-    fetchEvents()
-  }, [])
+    if (token) fetchEvents()
+  }, [token])
+
+  const handleAuth = async () => {
+    if (isSignup) {
+      if (!authForm.email || !authForm.password || !authForm.name) {
+        showAlert('error', '모든 항목을 입력해주세요.')
+        return
+      }
+      try {
+        const res = await fetch(`${API}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(authForm)
+        })
+        if (res.ok) {
+          showAlert('success', '회원가입 완료! 로그인해주세요.')
+          setIsSignup(false)
+          setAuthForm({ email: '', password: '', name: '' })
+        } else {
+          const text = await res.text()
+          showAlert('error', text || '회원가입 실패')
+        }
+      } catch (e) {
+        showAlert('error', '서버 오류')
+      }
+    } else {
+      if (!authForm.email || !authForm.password) {
+        showAlert('error', '이메일과 비밀번호를 입력해주세요.')
+        return
+      }
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: authForm.email, password: authForm.password })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          localStorage.setItem('token', data.token)
+          setToken(data.token)
+          setPage('main')
+          setAuthForm({ email: '', password: '', name: '' })
+        } else {
+          const text = await res.text()
+          showAlert('error', text || '로그인 실패')
+        }
+      } catch (e) {
+        showAlert('error', '서버 오류')
+      }
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    setToken('')
+    setPage('login')
+  }
 
   const fetchEvents = async () => {
     try {
@@ -72,13 +132,10 @@ function App() {
   }
 
   const handleIssue = async (couponId) => {
-    if (!userId.trim()) {
-      showAlert('error', '유저 ID를 입력해주세요.')
-      return
-    }
     try {
-      const res = await fetch(`${API}/coupons/${couponId}/issue?userId=${userId}`, {
-        method: 'POST'
+      const res = await fetch(`${API}/coupons/${couponId}/issue`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
         showAlert('success', '쿠폰 발급 완료!')
@@ -90,17 +147,14 @@ function App() {
       showAlert('error', '서버 오류')
     }
     setModal(null)
-    setUserId('')
   }
 
   const handleChat = async () => {
     if (!chatInput.trim() || chatLoading) return
-
     const question = chatInput
     setChatMessages(prev => [...prev, { role: 'user', content: question }])
     setChatInput('')
     setChatLoading(true)
-
     try {
       const res = await fetch(`${API}/chat`, {
         method: 'POST',
@@ -132,20 +186,82 @@ function App() {
     if (e.key === 'Enter') searchEvents()
   }
 
+  const handleAuthKeyDown = (e) => {
+    if (e.key === 'Enter') handleAuth()
+  }
+
+  // 로그인/회원가입 페이지
+  if (page === 'login') {
+    return (
+      <div>
+        <div className="header">
+          <h1>Coupon Event</h1>
+          <p>선착순 쿠폰을 발급받으세요!</p>
+        </div>
+
+        {alert && (
+          <div className={`alert ${alert.type}`}>{alert.message}</div>
+        )}
+
+        <div className="auth-card">
+          <h2>{isSignup ? '회원가입' : '로그인'}</h2>
+          {isSignup && (
+            <input
+              type="text"
+              placeholder="이름"
+              value={authForm.name}
+              onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
+            />
+          )}
+          <input
+            type="email"
+            placeholder="이메일"
+            value={authForm.email}
+            onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+          />
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={authForm.password}
+            onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+            onKeyDown={handleAuthKeyDown}
+          />
+          <button className="auth-btn" onClick={handleAuth}>
+            {isSignup ? '회원가입' : '로그인'}
+          </button>
+          <p className="auth-toggle" onClick={() => setIsSignup(!isSignup)}>
+            {isSignup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
+          </p>
+
+          {!isSignup && (
+            <>
+              <div className="social-divider"><span>또는</span></div>
+              <button className="social-btn kakao" onClick={() => showAlert('error', '카카오 로그인 준비 중입니다.')}>
+                카카오 로그인
+              </button>
+              <button className="social-btn naver" onClick={() => showAlert('error', '네이버 로그인 준비 중입니다.')}>
+                네이버 로그인
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // 메인 페이지
   return (
     <div>
       <div className="header">
         <h1>Coupon Event</h1>
         <p>선착순 쿠폰을 발급받으세요!</p>
+        <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
       </div>
 
       {alert && (
-        <div className={`alert ${alert.type}`}>
-          {alert.message}
-        </div>
+        <div className={`alert ${alert.type}`}>{alert.message}</div>
       )}
 
-      {/* 이벤트 등록 폼 */}
       <div className="create-section">
         {!showCreateForm ? (
           <button className="create-toggle-btn" onClick={() => setShowCreateForm(true)}>
@@ -154,24 +270,12 @@ function App() {
         ) : (
           <div className="create-form">
             <h3>쿠폰 이벤트 등록</h3>
-            <input
-              type="text"
-              placeholder="쿠폰 이름"
-              value={newEvent.name}
-              onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="쿠폰 설명"
-              value={newEvent.description}
-              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="총 수량"
-              value={newEvent.totalQuantity}
-              onChange={(e) => setNewEvent({ ...newEvent, totalQuantity: e.target.value })}
-            />
+            <input type="text" placeholder="쿠폰 이름" value={newEvent.name}
+              onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} />
+            <input type="text" placeholder="쿠폰 설명" value={newEvent.description}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} />
+            <input type="number" placeholder="총 수량" value={newEvent.totalQuantity}
+              onChange={(e) => setNewEvent({ ...newEvent, totalQuantity: e.target.value })} />
             <div className="create-buttons">
               <button className="confirm" onClick={handleCreate}>등록</button>
               <button className="cancel" onClick={() => setShowCreateForm(false)}>취소</button>
@@ -180,19 +284,12 @@ function App() {
         )}
       </div>
 
-      {/* 검색 */}
       <div className="search-bar">
-        <input
-          type="text"
-          placeholder="쿠폰 이벤트를 검색해보세요..."
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+        <input type="text" placeholder="쿠폰 이벤트를 검색해보세요..."
+          value={keyword} onChange={(e) => setKeyword(e.target.value)} onKeyDown={handleKeyDown} />
         <button onClick={searchEvents}>검색</button>
       </div>
 
-      {/* 쿠폰 목록 */}
       <div className="coupon-list">
         {events.length === 0 ? (
           <div className="empty-state">
@@ -207,28 +304,19 @@ function App() {
                 <p>{event.description}</p>
                 <p className="quantity">총 {event.totalQuantity}장</p>
               </div>
-              <button
-                className="issue-btn"
-                onClick={() => setModal(event)}
-              >
-                발급받기
-              </button>
+              <button className="issue-btn" onClick={() => setModal(event)}>발급받기</button>
             </div>
           ))
         )}
       </div>
 
-      {/* AI 챗봇 버튼 */}
       <button className="chat-fab" onClick={() => setChatOpen(!chatOpen)}>
         {chatOpen ? '✕' : 'AI'}
       </button>
 
-      {/* AI 챗봇 */}
       {chatOpen && (
         <div className="chat-window">
-          <div className="chat-header">
-            <span>AI 쿠폰 도우미</span>
-          </div>
+          <div className="chat-header"><span>AI 쿠폰 도우미</span></div>
           <div className="chat-body">
             {chatMessages.length === 0 && (
               <div className="chat-empty">쿠폰에 대해 무엇이든 물어보세요!</div>
@@ -245,37 +333,21 @@ function App() {
             )}
           </div>
           <div className="chat-input">
-            <input
-              type="text"
-              placeholder="질문을 입력하세요..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={handleChatKeyDown}
-            />
+            <input type="text" placeholder="질문을 입력하세요..."
+              value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={handleChatKeyDown} />
             <button onClick={handleChat} disabled={chatLoading}>전송</button>
           </div>
         </div>
       )}
 
-      {/* 발급 모달 */}
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{modal.name}</h2>
             <p className="desc">{modal.description}</p>
-            <input
-              type="number"
-              placeholder="유저 ID를 입력하세요"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
             <div className="modal-buttons">
-              <button className="confirm" onClick={() => handleIssue(modal.id)}>
-                발급받기
-              </button>
-              <button className="cancel" onClick={() => setModal(null)}>
-                취소
-              </button>
+              <button className="confirm" onClick={() => handleIssue(modal.id)}>발급받기</button>
+              <button className="cancel" onClick={() => setModal(null)}>취소</button>
             </div>
           </div>
         </div>

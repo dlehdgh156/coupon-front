@@ -16,6 +16,142 @@
   opacity: 0.85;
 }
 
+.header {
+  position: relative;
+}
+
+/* 로그아웃 버튼 */
+.logout-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5rem 1.2rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 로그인/회원가입 */
+.auth-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  max-width: 400px;
+  margin: 0 auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.auth-card h2 {
+  font-size: 1.5rem;
+  color: #2d3436;
+  margin-bottom: 1.5rem;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #dfe6e9;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  margin-bottom: 0.8rem;
+}
+
+.auth-card input:focus {
+  outline: none;
+  border-color: #6c5ce7;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+  transition: all 0.2s;
+}
+
+.auth-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+}
+
+.auth-toggle {
+  margin-top: 1.2rem;
+  color: #6c5ce7;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.auth-toggle:hover {
+  text-decoration: underline;
+}
+
+/* 소셜 로그인 */
+.social-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.2rem 0;
+  color: #b2bec3;
+  font-size: 0.85rem;
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #dfe6e9;
+}
+
+.social-divider span {
+  padding: 0 1rem;
+}
+
+.social-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 0.6rem;
+  transition: all 0.2s;
+}
+
+.social-btn:hover {
+  transform: translateY(-1px);
+}
+
+.social-btn.kakao {
+  background: #FEE500;
+  color: #3C1E1E;
+}
+
+.social-btn.naver {
+  background: #03C75A;
+  color: white;
+}
+
 /* 등록 폼 */
 .create-section {
   margin-bottom: 2rem;
